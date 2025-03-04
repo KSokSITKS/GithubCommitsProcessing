@@ -1,5 +1,8 @@
 ﻿using Application;
+using Application.Github;
 using Application.Repos;
+using ConsoleApp.UI;
+using Domain;
 using Domain.Entities;
 using Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,42 +15,9 @@ namespace ConsoleApp
 		static void Main(string[] args)
 		{
 			var services = RegisterServices();
-
-			while (true)
-			{
-				Console.WriteLine("Please enter repository owner:");
-				var owner = GetInputFromConsole();
-
-				Console.WriteLine("Please enter repository name:");
-				var repositoryName = GetInputFromConsole();
-
-				try
-				{
-					var commitService = services.GetRequiredService<RepoService>();
-					commitService.LoadCommitsToDb(repositoryName, owner);
-
-					var repoRepository = services.GetRequiredService<IRepoRepository>();
-
-					var repoObj = repoRepository.TryGetRepo(repositoryName, owner);
-					var commits = repoObj != null
-						? repoObj.Commits
-						: new List<Commit>();
-
-					foreach (var commit in commits)
-					{
-						Console.WriteLine($"{repositoryName}/{commit.Sha}: {commit.Message} [{commit.Committer}]");
-					}
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"Error: {ex.Message}");
-				}
-			}
-		}
-
-		private static string GetInputFromConsole()
-		{
-			return Console.ReadLine()?.Trim() ?? string.Empty;
+			var viewer = services.GetRequiredService<GitHubCommitViewer>();
+			
+			viewer.Run();
 		}
 
 		private static ServiceProvider RegisterServices()
@@ -56,6 +26,7 @@ namespace ConsoleApp
 				// services
 				.AddApplication()
 				.AddPersistence()
+				.AddSingleton<IUserInterface, ConsoleUI>()
 				.BuildServiceProvider();
 
 			return serviceProvider;

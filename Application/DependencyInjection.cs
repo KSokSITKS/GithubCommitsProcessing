@@ -13,6 +13,7 @@ namespace Application
 			services.AddScoped<RepoService>();
 			services.AddSingleton<IGitHubService, GitHubService>();
 			services.AddSingleton<ICommitService, CommitService>();
+			services.AddSingleton<GitHubCommitViewer>();
 			services.AddHttpClient(GitHubClientConfig.Name, client =>
 			{
 				client.BaseAddress = new Uri("https://api.github.com/");
