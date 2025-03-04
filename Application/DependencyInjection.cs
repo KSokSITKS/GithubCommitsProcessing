@@ -1,4 +1,5 @@
-﻿using Application.Github;
+﻿using Application.Commits;
+using Application.Github;
 using Application.Repos;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +11,7 @@ namespace Application
 		{
 			services.AddScoped<RepoService>();
 			services.AddSingleton<IGitHubService, GitHubService>();
+			services.AddSingleton<ICommitService, CommitService>();
 
 			return services;
 		}
