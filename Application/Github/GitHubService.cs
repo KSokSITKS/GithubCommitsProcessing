@@ -4,18 +4,21 @@ namespace Application.Github
 {
 	public class GitHubService : IGitHubService
 	{
-		private const string GitHubApiBaseUrl = "https://api.github.com";
+		private readonly IHttpClientFactory _httpClientFactory;
+
+		public GitHubService(IHttpClientFactory httpClientFactory)
+		{
+			_httpClientFactory = httpClientFactory;
+		}
 
 		public List<GitHubCommitDto> GetCommitsFromRepository(string owner, string repositoryName)
 		{
-			using var httpClient = new HttpClient();
-			httpClient.DefaultRequestHeaders.Add("User-Agent", "CommitService");
-			httpClient.DefaultRequestHeaders.Accept.Add(new("application/vnd.github.v3+json"));
+			var client = _httpClientFactory.CreateClient(GitHubClientConfig.Name);
 
 			try
 			{
-				var url = $"{GitHubApiBaseUrl}/repos/{owner}/{repositoryName}/commits";
-				var response = httpClient.GetAsync(url).Result;
+				var url = $"repos/{owner}/{repositoryName}/commits";
+				var response = client.GetAsync(url).Result;
 				response.EnsureSuccessStatusCode();
 
 				var content = response.Content.ReadAsStringAsync();
