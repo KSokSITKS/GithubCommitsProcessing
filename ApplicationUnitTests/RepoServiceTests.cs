@@ -7,7 +7,7 @@ using Domain.Exceptions;
 using Domain.Repositories;
 using Moq;
 
-namespace Application.Tests.Repos
+namespace ApplicationUnitTests
 {
 	[TestClass]
 	public class RepoServiceTests

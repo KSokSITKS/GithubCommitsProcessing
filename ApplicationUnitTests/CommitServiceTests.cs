@@ -3,7 +3,7 @@ using Domain.Entities;
 using Domain.Repositories;
 using Moq;
 
-namespace Application.Tests.Commits
+namespace ApplicationUnitTests
 {
 	[TestClass]
 	public class CommitServiceTests

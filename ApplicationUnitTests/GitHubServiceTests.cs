@@ -4,7 +4,7 @@ using Moq.Protected;
 using System.Net;
 using System.Text.Json;
 
-namespace Application.Tests.Github
+namespace ApplicationUnitTests
 {
 	[TestClass]
 	public class GitHubServiceTests
