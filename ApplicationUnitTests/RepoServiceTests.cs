@@ -34,44 +34,44 @@ namespace Application.Tests.Repos
 		}
 
 		[TestMethod]
-		public void Should_ThrowArgumentException_When_RepositoryOwnerIsEmpty()
+		public async Task Should_ThrowArgumentException_When_RepositoryOwnerIsEmpty()
 		{
 			// Arrange
 			var emptyOwner = string.Empty;
 			var repoName = "test-repo";
 
 			// Act & Assert
-			var exception = Assert.ThrowsException<ProgramGeneralException>(() =>
-				_sut.LoadCommitsToDb(repoName, emptyOwner));
+			var exception = await Assert.ThrowsExceptionAsync<ProgramGeneralException>(async () =>
+				await _sut.LoadCommitsToDbAsync(repoName, emptyOwner));
 			Assert.AreEqual("Repository owner cannot be empty", exception.Message);
 		}
 
 		[TestMethod]
-		public void Should_ThrowArgumentException_When_RepositoryNameIsEmpty()
+		public async Task Should_ThrowArgumentException_When_RepositoryNameIsEmpty()
 		{
 			// Arrange
 			var owner = "test-owner";
 			var emptyRepoName = string.Empty;
 
 			// Act & Assert
-			var exception = Assert.ThrowsException<ProgramGeneralException>(() =>
-				_sut.LoadCommitsToDb(emptyRepoName, owner));
+			var exception = await Assert.ThrowsExceptionAsync<ProgramGeneralException>(async () =>
+				await _sut.LoadCommitsToDbAsync(emptyRepoName, owner));
 			Assert.AreEqual("Repository name cannot be empty", exception.Message);
 		}
 
 		[TestMethod]
-		public void Should_SaveNewRepo_When_RepoDoesNotExist()
+		public async Task Should_SaveNewRepo_When_RepoDoesNotExist()
 		{
 			// Arrange
 			var repoName = "test-repo";
 			var owner = "test-owner";
 			_repoRepositoryMock.Setup(x => x.TryGetRepo(repoName, owner))
 				.Returns((Repo?)null);
-			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepository(owner, repoName))
-				.Returns(new List<GitHubCommitDto>());
+			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepositoryAsync(owner, repoName))
+				.ReturnsAsync(new List<GitHubCommitDto>());
 
 			// Act
-			_sut.LoadCommitsToDb(repoName, owner);
+			await _sut.LoadCommitsToDbAsync(repoName, owner);
 
 			// Assert
 			_repoRepositoryMock.Verify(x => x.Add(It.Is<Repo>(r =>
@@ -80,7 +80,7 @@ namespace Application.Tests.Repos
 		}
 
 		[TestMethod]
-		public void Should_NotSaveNewRepo_When_RepoExists()
+		public async Task Should_NotSaveNewRepo_When_RepoExists()
 		{
 			// Arrange
 			var repoName = "test-repo";
@@ -93,18 +93,18 @@ namespace Application.Tests.Repos
 			};
 			_repoRepositoryMock.Setup(x => x.TryGetRepo(repoName, owner))
 				.Returns(existingRepo);
-			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepository(owner, repoName))
-				.Returns(new List<GitHubCommitDto>());
+			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepositoryAsync(owner, repoName))
+				.ReturnsAsync(new List<GitHubCommitDto>());
 
 			// Act
-			_sut.LoadCommitsToDb(repoName, owner);
+			await _sut.LoadCommitsToDbAsync(repoName, owner);
 
 			// Assert
 			_repoRepositoryMock.Verify(x => x.Add(It.IsAny<Repo>()), Times.Never);
 		}
 
 		[TestMethod]
-		public void Should_SaveNewCommits_When_CommitsReceived()
+		public async Task Should_SaveNewCommits_When_CommitsReceived()
 		{
 			// Arrange
 			var repoName = "test-repo";
@@ -112,17 +112,17 @@ namespace Application.Tests.Repos
 			var repoId = Guid.NewGuid();
 			var existingRepo = new Repo { Id = repoId };
 			var githubCommits = new List<GitHubCommitDto>
-			{
-				new() { Sha = "new-sha", Commit = new() { Message = "test", Committer = new() { Name = "tester" } } }
-			};
+		{
+			new() { Sha = "new-sha", Commit = new() { Message = "test", Committer = new() { Name = "tester" } } }
+		};
 
 			_repoRepositoryMock.Setup(x => x.TryGetRepo(repoName, owner))
 				.Returns(existingRepo);
-			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepository(owner, repoName))
-				.Returns(githubCommits);
+			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepositoryAsync(owner, repoName))
+				.ReturnsAsync(githubCommits);
 
 			// Act
-			_sut.LoadCommitsToDb(repoName, owner);
+			await _sut.LoadCommitsToDbAsync(repoName, owner);
 
 			// Assert
 			_commitServiceMock.Verify(x => x.SaveNewCommits(
@@ -137,7 +137,7 @@ namespace Application.Tests.Repos
 		}
 
 		[TestMethod]
-		public void Should_NotProcessCommits_When_NoCommitsReceived()
+		public async Task Should_NotProcessCommits_When_NoCommitsReceived()
 		{
 			// Arrange
 			var repoName = "test-repo";
@@ -147,11 +147,11 @@ namespace Application.Tests.Repos
 
 			_repoRepositoryMock.Setup(x => x.TryGetRepo(repoName, owner))
 				.Returns(existingRepo);
-			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepository(owner, repoName))
-				.Returns((List<GitHubCommitDto>)null);
+			_gitHubServiceMock.Setup(x => x.GetCommitsFromRepositoryAsync(owner, repoName))
+				.ReturnsAsync((List<GitHubCommitDto>)null);
 
 			// Act
-			_sut.LoadCommitsToDb(repoName, owner);
+			await _sut.LoadCommitsToDbAsync(repoName, owner);
 
 			// Assert
 			_commitServiceMock.Verify(x => x.SaveNewCommits(

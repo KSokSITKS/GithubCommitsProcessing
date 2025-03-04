@@ -25,33 +25,6 @@ namespace Application.Repos
 			_gitHubService = gitHubService;
 		}
 
-		public void LoadCommitsToDb(string repositoryName, string repositoryOwner)
-		{
-			if (string.IsNullOrWhiteSpace(repositoryOwner))
-				throw new ProgramGeneralException("Repository owner cannot be empty");
-
-			if (string.IsNullOrWhiteSpace(repositoryName))
-				throw new ProgramGeneralException("Repository name cannot be empty");
-
-			var githubCommits = _gitHubService.GetCommitsFromRepository(repositoryOwner, repositoryName);
-
-			if (githubCommits == null)
-				return;
-
-			var repoId = SaveRepo(repositoryName, repositoryOwner);
-
-			var commits = githubCommits.Select(gc => new Commit
-			{
-				Sha = gc.Sha,
-				Message = gc.Commit.Message,
-				Committer = gc.Commit.Committer.Name,
-				RepositoryId = repoId
-			}).ToList();
-
-			_commitService.SaveNewCommits(commits, repoId);
-			_unitOfWork.SaveChanges();
-		}
-
 		public async Task LoadCommitsToDbAsync(string repositoryName, string repositoryOwner)
 		{
 			if (string.IsNullOrWhiteSpace(repositoryOwner))
