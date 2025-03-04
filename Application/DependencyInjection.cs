@@ -1,4 +1,5 @@
-﻿using Application.Repos;
+﻿using Application.Github;
+using Application.Repos;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application
@@ -8,6 +9,7 @@ namespace Application
         public static IServiceCollection AddApplication(this IServiceCollection services)
 		{
 			services.AddScoped<RepoService>();
+			services.AddSingleton<IGitHubService, GitHubService>();
 
 			return services;
 		}

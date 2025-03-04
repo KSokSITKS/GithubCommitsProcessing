@@ -1,5 +1,7 @@
 ﻿using Application;
 using Application.Repos;
+using Domain.Entities;
+using Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence;
 
@@ -17,16 +19,23 @@ namespace ConsoleApp
 				var owner = GetInputFromConsole();
 
 				Console.WriteLine("Please enter repository name:");
-				var repo = GetInputFromConsole();
+				var repositoryName = GetInputFromConsole();
 
 				try
 				{
 					var commitService = services.GetRequiredService<RepoService>();
-					var commits = commitService.GetCommits(repo, owner);
+					commitService.LoadCommitsToDb(repositoryName, owner);
+
+					var repoRepository = services.GetRequiredService<IRepoRepository>();
+
+					var repoObj = repoRepository.TryGetRepo(repositoryName, owner);
+					var commits = repoObj != null
+						? repoObj.Commits
+						: new List<Commit>();
 
 					foreach (var commit in commits)
 					{
-						Console.WriteLine($"{owner}/{repo}/{commit.Sha}: {commit.Message} [{commit.Committer}]");
+						Console.WriteLine($"{repositoryName}/{commit.Sha}: {commit.Message} [{commit.Committer}]");
 					}
 				}
 				catch (Exception ex)

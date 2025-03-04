@@ -9,5 +9,7 @@ namespace Domain.Entities
 		public Guid RepositoryId { get; set; }
         public string Message { get; set; } = string.Empty;
 		public string Committer { get; set; } = string.Empty;
+
+		public virtual Repo Repository { get; set; }
 	}
 }

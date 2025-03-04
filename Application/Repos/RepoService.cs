@@ -1,6 +1,8 @@
-﻿using Domain;
+﻿using Application.Github;
+using Domain;
 using Domain.Entities;
 using Domain.Repositories;
+using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -11,38 +13,31 @@ namespace Application.Repos
         private readonly ICommitRepository _commitsRepository;
 		private readonly IRepoRepository _repoRepository;
 		private readonly IUnitOfWork _unitOfWork;
+		private readonly IGitHubService _gitHubService;
 		private const string GitHubApiBaseUrl = "https://api.github.com";
 
-		public RepoService(ICommitRepository commitsRepository, IRepoRepository repoRepository, IUnitOfWork unitOfWork)
+		public RepoService(ICommitRepository commitsRepository, IRepoRepository repoRepository, IUnitOfWork unitOfWork, IGitHubService gitHubService)
 		{
 			_commitsRepository = commitsRepository;
 			_repoRepository = repoRepository;
 			_unitOfWork = unitOfWork;
+			_gitHubService = gitHubService;
 		}
 
-		public List<Commit> GetCommits(string repositoryName, string repositoryOwner)
+		public void LoadCommitsToDb(string repositoryName, string repositoryOwner)
 		{
 			if (string.IsNullOrWhiteSpace(repositoryOwner))
-				throw new ArgumentException("Repository owner cannot be empty", nameof(repositoryOwner));
+				throw new ArgumentException("Repository owner cannot be empty");
 
 			if (string.IsNullOrWhiteSpace(repositoryName))
-				throw new ArgumentException("Repository name cannot be empty", nameof(repositoryName));
-
-			using var httpClient = new HttpClient();
-			httpClient.DefaultRequestHeaders.Add("User-Agent", "CommitService");
-			httpClient.DefaultRequestHeaders.Accept.Add(new("application/vnd.github.v3+json"));
+				throw new ArgumentException("Repository name cannot be empty");
 
 			try
 			{
-				var url = $"{GitHubApiBaseUrl}/repos/{repositoryOwner}/{repositoryName}/commits";
-				var response = httpClient.GetAsync(url).Result;
-				response.EnsureSuccessStatusCode();
-
-				var content = response.Content.ReadAsStringAsync();
-				var githubCommits = JsonSerializer.Deserialize<List<GitHubCommit>>(content.Result);
+				var githubCommits = _gitHubService.GetCommitsFromRepository(repositoryOwner, repositoryName);
 
 				if (githubCommits == null)
-					return new List<Commit>();
+					return;
 
 				var repoId = SaveRepo(repositoryName, repositoryOwner);
 
@@ -57,8 +52,6 @@ namespace Application.Repos
 				SaveCommits(commits, repoId);
 
 				_unitOfWork.SaveChanges();
-
-				return commits;
 			}
 			catch (HttpRequestException ex)
 			{
