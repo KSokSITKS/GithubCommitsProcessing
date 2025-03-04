@@ -1,4 +1,4 @@
-﻿namespace Domain
+﻿namespace ConsoleApp.UI
 {
 	public interface IUserInterface
 	{

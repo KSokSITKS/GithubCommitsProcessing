@@ -3,15 +3,15 @@ using Domain;
 using Domain.Entities;
 using Domain.Repositories;
 
-namespace Application.Github
+namespace ConsoleApp.UI
 {
-	public class GitHubCommitViewer
+	public class CommitViewer
 	{
 		private readonly IUserInterface _ui;
 		private readonly RepoService _repoService;
 		private readonly IRepoRepository _repoRepository;
 
-		public GitHubCommitViewer(
+		public CommitViewer(
 			IUserInterface ui,
 			RepoService repoService,
 			IRepoRepository repoRepository)

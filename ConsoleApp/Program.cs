@@ -15,7 +15,7 @@ namespace ConsoleApp
 		static void Main(string[] args)
 		{
 			var services = RegisterServices();
-			var viewer = services.GetRequiredService<GitHubCommitViewer>();
+			var viewer = services.GetRequiredService<CommitViewer>();
 			
 			viewer.Run();
 		}
@@ -27,6 +27,7 @@ namespace ConsoleApp
 				.AddApplication()
 				.AddPersistence()
 				.AddSingleton<IUserInterface, ConsoleUI>()
+				.AddSingleton<CommitViewer>()
 				.BuildServiceProvider();
 
 			return serviceProvider;
