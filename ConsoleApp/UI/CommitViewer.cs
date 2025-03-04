@@ -1,5 +1,5 @@
 ﻿using Application.Repos;
-using Domain;
+using ConsoleApp.Commands;
 using Domain.Entities;
 using Domain.Repositories;
 
@@ -8,26 +8,31 @@ namespace ConsoleApp.UI
 	public class CommitViewer
 	{
 		private readonly IUserInterface _ui;
-		private readonly RepoService _repoService;
-		private readonly IRepoRepository _repoRepository;
+		private readonly ICommandFactory _commandFactory;
 
-		public CommitViewer(
-			IUserInterface ui,
-			RepoService repoService,
-			IRepoRepository repoRepository)
+		public CommitViewer(IUserInterface ui, ICommandFactory commandFactory)
 		{
 			_ui = ui;
-			_repoService = repoService;
-			_repoRepository = repoRepository;
+			_commandFactory = commandFactory;
 		}
 
-		public void Run()
+		public async Task RunAsync()
 		{
 			while (true)
 			{
+				DisplayAvailableCommands();
+				var commandName = _ui.GetInput("Enter command:");
+
+				var command = _commandFactory.CreateCommand(commandName);
+				if (command == null)
+				{
+					_ui.DisplayError("Invalid command");
+					continue;
+				}
+
 				try
 				{
-					ProcessSingleRepository();
+					await command.ExecuteAsync();
 				}
 				catch (Exception ex)
 				{
@@ -36,32 +41,12 @@ namespace ConsoleApp.UI
 			}
 		}
 
-		private void ProcessSingleRepository()
+		private void DisplayAvailableCommands()
 		{
-			var owner = _ui.GetInput("Please enter repository owner:");
-			var repositoryName = _ui.GetInput("Please enter repository name:");
-
-			_repoService.LoadCommitsToDb(repositoryName, owner);
-
-			var repo = _repoRepository.TryGetRepo(repositoryName, owner);
-			if (repo == null || !repo.Commits.Any())
+			_ui.DisplayMessage("\nAvailable commands:");
+			foreach (var command in _commandFactory.GetAvailableCommands())
 			{
-				_ui.DisplayMessage("No commits found.");
-				return;
-			}
-
-			DisplayCommits(repo.Commits, repositoryName);
-		}
-
-		private void DisplayCommits(IEnumerable<Commit> commits, string repositoryName)
-		{
-			foreach (var commit in commits)
-			{
-				_ui.DisplayCommit(
-					repositoryName,
-					commit.Sha,
-					commit.Message,
-					commit.Committer);
+				_ui.DisplayMessage($"  {command.Name} - {command.Description}");
 			}
 		}
 	}

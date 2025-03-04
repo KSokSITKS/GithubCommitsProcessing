@@ -1,10 +1,7 @@
 ﻿using Application;
-using Application.Github;
-using Application.Repos;
+using ConsoleApp.Commands.Implementations;
+using ConsoleApp.Commands;
 using ConsoleApp.UI;
-using Domain;
-using Domain.Entities;
-using Domain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence;
 
@@ -12,12 +9,12 @@ namespace ConsoleApp
 {
 	internal class Program
 	{
-		static void Main(string[] args)
+		static async Task Main(string[] args)
 		{
 			var services = RegisterServices();
 			var viewer = services.GetRequiredService<CommitViewer>();
 			
-			viewer.Run();
+			await viewer.RunAsync();
 		}
 
 		private static ServiceProvider RegisterServices()
@@ -28,6 +25,7 @@ namespace ConsoleApp
 				.AddPersistence()
 				.AddSingleton<IUserInterface, ConsoleUI>()
 				.AddSingleton<CommitViewer>()
+				.AddSingleton<ICommandFactory, CommandFactory>()
 				.BuildServiceProvider();
 
 			return serviceProvider;

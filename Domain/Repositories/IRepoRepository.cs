@@ -6,5 +6,6 @@ namespace Domain.Repositories
     {
         void Add(Repo repo);
 		Repo? TryGetRepo(string repositoryName, string repositoryOwner);
+		Task<Repo?> TryGetRepoAsync(string repositoryName, string repositoryOwner);
 	}
 }

@@ -51,6 +51,33 @@ namespace Application.Repos
 			_unitOfWork.SaveChanges();
 		}
 
+		public async Task LoadCommitsToDbAsync(string repositoryName, string repositoryOwner)
+		{
+			if (string.IsNullOrWhiteSpace(repositoryOwner))
+				throw new ArgumentException("Repository owner cannot be empty");
+
+			if (string.IsNullOrWhiteSpace(repositoryName))
+				throw new ArgumentException("Repository name cannot be empty");
+
+			var githubCommits = await _gitHubService.GetCommitsFromRepositoryAsync(repositoryOwner, repositoryName);
+
+			if (githubCommits == null)
+				return;
+
+			var repoId = SaveRepo(repositoryName, repositoryOwner);
+
+			var commits = githubCommits.Select(gc => new Commit
+			{
+				Sha = gc.Sha,
+				Message = gc.Commit.Message,
+				Committer = gc.Commit.Committer.Name,
+				RepositoryId = repoId
+			}).ToList();
+
+			_commitService.SaveNewCommits(commits, repoId);
+			_unitOfWork.SaveChanges();
+		}
+
 		private Guid SaveRepo(string repositoryName, string repositoryOwner)
 		{
 			var repo = _repoRepository.TryGetRepo(repositoryName, repositoryOwner);

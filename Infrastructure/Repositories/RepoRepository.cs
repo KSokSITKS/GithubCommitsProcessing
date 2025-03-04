@@ -1,6 +1,7 @@
 ﻿using Domain.Entities;
 using Domain.Repositories;
 using Persistence.Database;
+using System.Data.Entity;
 
 namespace Persistence.Repositories
 {
@@ -21,6 +22,11 @@ namespace Persistence.Repositories
 		public Repo? TryGetRepo(string repositoryName, string repositoryOwner)
 		{
 			return _context.Repos.FirstOrDefault(r => r.Name == repositoryName && r.Owner == repositoryOwner);
+		}
+
+		public async Task<Repo?> TryGetRepoAsync(string repositoryName, string repositoryOwner)
+		{
+			return await _context.Repos.FirstOrDefaultAsync(r => r.Name == repositoryName && r.Owner == repositoryOwner);
 		}
 	}
 }
