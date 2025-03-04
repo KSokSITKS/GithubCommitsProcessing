@@ -15,7 +15,6 @@ namespace Application.Repos
 		private readonly IRepoRepository _repoRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IGitHubService _gitHubService;
-		private const string GitHubApiBaseUrl = "https://api.github.com";
 
 		public RepoService(ICommitService commitService, IRepoRepository repoRepository, IUnitOfWork unitOfWork, IGitHubService gitHubService)
 		{
