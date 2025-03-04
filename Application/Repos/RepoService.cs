@@ -2,6 +2,7 @@
 using Application.Github;
 using Domain;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Repositories;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
@@ -27,10 +28,10 @@ namespace Application.Repos
 		public void LoadCommitsToDb(string repositoryName, string repositoryOwner)
 		{
 			if (string.IsNullOrWhiteSpace(repositoryOwner))
-				throw new ArgumentException("Repository owner cannot be empty");
+				throw new ProgramGeneralException("Repository owner cannot be empty");
 
 			if (string.IsNullOrWhiteSpace(repositoryName))
-				throw new ArgumentException("Repository name cannot be empty");
+				throw new ProgramGeneralException("Repository name cannot be empty");
 
 			var githubCommits = _gitHubService.GetCommitsFromRepository(repositoryOwner, repositoryName);
 
@@ -54,10 +55,10 @@ namespace Application.Repos
 		public async Task LoadCommitsToDbAsync(string repositoryName, string repositoryOwner)
 		{
 			if (string.IsNullOrWhiteSpace(repositoryOwner))
-				throw new ArgumentException("Repository owner cannot be empty");
+				throw new ProgramGeneralException("Repository owner cannot be empty");
 
 			if (string.IsNullOrWhiteSpace(repositoryName))
-				throw new ArgumentException("Repository name cannot be empty");
+				throw new ProgramGeneralException("Repository name cannot be empty");
 
 			var githubCommits = await _gitHubService.GetCommitsFromRepositoryAsync(repositoryOwner, repositoryName);
 

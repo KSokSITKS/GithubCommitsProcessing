@@ -3,6 +3,7 @@ using Application.Github;
 using Application.Repos;
 using Domain;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Repositories;
 using Moq;
 
@@ -40,7 +41,7 @@ namespace Application.Tests.Repos
 			var repoName = "test-repo";
 
 			// Act & Assert
-			var exception = Assert.ThrowsException<ArgumentException>(() =>
+			var exception = Assert.ThrowsException<ProgramGeneralException>(() =>
 				_sut.LoadCommitsToDb(repoName, emptyOwner));
 			Assert.AreEqual("Repository owner cannot be empty", exception.Message);
 		}
@@ -53,7 +54,7 @@ namespace Application.Tests.Repos
 			var emptyRepoName = string.Empty;
 
 			// Act & Assert
-			var exception = Assert.ThrowsException<ArgumentException>(() =>
+			var exception = Assert.ThrowsException<ProgramGeneralException>(() =>
 				_sut.LoadCommitsToDb(emptyRepoName, owner));
 			Assert.AreEqual("Repository name cannot be empty", exception.Message);
 		}

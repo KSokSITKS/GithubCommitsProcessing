@@ -1,6 +1,7 @@
 ﻿using Application.Repos;
 using ConsoleApp.Commands;
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.Repositories;
 
 namespace ConsoleApp.UI
@@ -34,9 +35,13 @@ namespace ConsoleApp.UI
 				{
 					await command.ExecuteAsync();
 				}
-				catch (Exception ex)
+				catch (ProgramGeneralException ex)
 				{
 					_ui.DisplayError(ex.Message);
+				}
+				catch (Exception ex)
+				{
+					_ui.DisplayError($"Unhandled exception: {ex.Message}");
 				}
 			}
 		}
