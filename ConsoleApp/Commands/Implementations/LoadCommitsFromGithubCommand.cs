@@ -6,12 +6,12 @@ namespace ConsoleApp.Commands.Implementations
 	public class LoadCommitsFromGithubCommand : ICommand
 	{
 		private readonly IUserInterface _userInterface;
-		private readonly RepoService _repoService;
+		private readonly IRepoService _repoService;
 
 		public string Name => "load";
 		public string Description => "Load commits from GitHub repository (saving to DB)";
 
-		public LoadCommitsFromGithubCommand(RepoService repoService, IUserInterface userInterface)
+		public LoadCommitsFromGithubCommand(IRepoService repoService, IUserInterface userInterface)
 		{
 			_repoService = repoService;
 			_userInterface = userInterface;

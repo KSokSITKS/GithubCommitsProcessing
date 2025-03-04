@@ -10,9 +10,9 @@ using System.Text.Json.Serialization;
 
 namespace Application.Repos
 {
-    public sealed class RepoService
-    {
-        private readonly ICommitService _commitService;
+	public sealed class RepoService : IRepoService
+	{
+		private readonly ICommitService _commitService;
 		private readonly IRepoRepository _repoRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IGitHubService _gitHubService;

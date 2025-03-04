@@ -10,7 +10,7 @@ namespace Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
 		{
-			services.AddScoped<RepoService>();
+			services.AddSingleton<IRepoService, RepoService>();
 			services.AddSingleton<IGitHubService, GitHubService>();
 			services.AddSingleton<ICommitService, CommitService>();
 			services.AddHttpClient(GitHubClientConfig.Name, client =>
