@@ -31,28 +31,28 @@ namespace ApplicationUnitTests
 		}
 
 		[TestMethod]
-		public void Should_ReturnCommits_When_ApiCallIsSuccessful()
+		public async Task Should_ReturnCommits_When_ApiCallIsSuccessful()
 		{
 			// Arrange
 			var owner = "test-owner";
 			var repoName = "test-repo";
 			var expectedCommits = new List<GitHubCommitDto>
+		{
+			new()
 			{
-				new()
+				Sha = "test-sha",
+				Commit = new()
 				{
-					Sha = "test-sha",
-					Commit = new()
-					{
-						Message = "test-message",
-						Committer = new() { Name = "test-committer" }
-					}
+					Message = "test-message",
+					Committer = new() { Name = "test-committer" }
 				}
-			};
+			}
+		};
 
 			SetupHttpMessageHandler(JsonSerializer.Serialize(expectedCommits), HttpStatusCode.OK);
 
 			// Act
-			var result = _sut.GetCommitsFromRepository(owner, repoName);
+			var result = await _sut.GetCommitsFromRepositoryAsync(owner, repoName);
 
 			// Assert
 			Assert.IsNotNull(result);
@@ -63,7 +63,7 @@ namespace ApplicationUnitTests
 		}
 
 		[TestMethod]
-		public void Should_ReturnEmptyList_When_ApiReturnsNoCommits()
+		public async Task Should_ReturnEmptyList_When_ApiReturnsNoCommits()
 		{
 			// Arrange
 			var owner = "test-owner";
@@ -72,7 +72,7 @@ namespace ApplicationUnitTests
 			SetupHttpMessageHandler(JsonSerializer.Serialize(new List<GitHubCommitDto>()), HttpStatusCode.OK);
 
 			// Act
-			var result = _sut.GetCommitsFromRepository(owner, repoName);
+			var result = await _sut.GetCommitsFromRepositoryAsync(owner, repoName);
 
 			// Assert
 			Assert.IsNotNull(result);
@@ -80,35 +80,88 @@ namespace ApplicationUnitTests
 		}
 
 		[TestMethod]
-		public void Should_ThrowGitHubApiException_When_ApiReturnsError()
+		public async Task Should_ThrowGitHubApiException_When_ApiReturnsError()
 		{
 			// Arrange
 			var owner = "test-owner";
 			var repoName = "test-repo";
+			var expectedUrl = $"repos/{owner}/{repoName}/commits?per_page=100";
 
 			SetupHttpMessageHandler("Not Found", HttpStatusCode.NotFound);
 
 			// Act & Assert
-			var exception = Assert.ThrowsException<GitHubApiException>(() =>
-				_sut.GetCommitsFromRepository(owner, repoName));
+			var exception = await Assert.ThrowsExceptionAsync<GitHubApiException>(async () =>
+				await _sut.GetCommitsFromRepositoryAsync(owner, repoName));
 			Assert.IsTrue(exception.Message.Contains("Error accessing GitHub API"));
+
+			// Verify the correct URL was called
+			VerifyHttpCall(expectedUrl);
 		}
 
 		[TestMethod]
-		public void Should_UseCorrectUrl_When_CallingApi()
+		public async Task Should_UseCorrectUrl_When_CallingApi()
 		{
 			// Arrange
 			var owner = "test-owner";
 			var repoName = "test-repo";
-			var expectedUrl = $"repos/{owner}/{repoName}/commits";
+			var expectedUrl = $"repos/{owner}/{repoName}/commits?per_page=100";
 
 			SetupHttpMessageHandler("[]", HttpStatusCode.OK);
 
 			// Act
-			_sut.GetCommitsFromRepository(owner, repoName);
+			await _sut.GetCommitsFromRepositoryAsync(owner, repoName);
 
 			// Assert
 			VerifyHttpCall(expectedUrl);
+		}
+
+		[TestMethod]
+		public async Task Should_HandlePagination_When_MultiplePages()
+		{
+			// Arrange
+			var owner = "test-owner";
+			var repoName = "test-repo";
+
+			// Setup first page response with Link header
+			_httpMessageHandlerMock
+				.Protected()
+				.SetupSequence<Task<HttpResponseMessage>>(
+					"SendAsync",
+					ItExpr.IsAny<HttpRequestMessage>(),
+					ItExpr.IsAny<CancellationToken>()
+				)
+				.ReturnsAsync(new HttpResponseMessage
+				{
+					StatusCode = HttpStatusCode.OK,
+					Content = new StringContent("[{\"sha\":\"commit1\"}]"),
+					Headers = {
+				{ "Link", "<https://api.github.com/repos/test-owner/test-repo/commits?page=2&per_page=100>; rel=\"next\"" }
+					}
+				})
+				.ReturnsAsync(new HttpResponseMessage
+				{
+					StatusCode = HttpStatusCode.OK,
+					Content = new StringContent("[{\"sha\":\"commit2\"}]")
+				});
+
+			// Act
+			var result = await _sut.GetCommitsFromRepositoryAsync(owner, repoName);
+
+			// Assert
+			Assert.AreEqual(2, result.Count);
+			Assert.AreEqual("commit1", result[0].Sha);
+			Assert.AreEqual("commit2", result[1].Sha);
+
+			// Verify both pages were called
+			_httpMessageHandlerMock.Protected().Verify(
+				"SendAsync",
+				Times.Exactly(2),
+				ItExpr.Is<HttpRequestMessage>(req =>
+					req.Method == HttpMethod.Get &&
+					(req.RequestUri.ToString().Contains("?per_page=100") ||
+					 req.RequestUri.ToString().Contains("page=2"))),
+				ItExpr.IsAny<CancellationToken>()
+			);
 		}
 
 		private void SetupHttpMessageHandler(string content, HttpStatusCode statusCode)

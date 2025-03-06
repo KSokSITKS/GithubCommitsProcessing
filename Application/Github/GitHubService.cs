@@ -1,9 +1,14 @@
-﻿using System.Text.Json;
+﻿using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace Application.Github
 {
 	public class GitHubService : IGitHubService
 	{
+		private const string LinkHeaderName = "Link";
+		private const string NextRelation = "rel=\"next\"";
+		private const int RecordsPerPage = 100;
+
 		private readonly IHttpClientFactory _httpClientFactory;
 
 		public GitHubService(IHttpClientFactory httpClientFactory)
@@ -11,18 +16,27 @@ namespace Application.Github
 			_httpClientFactory = httpClientFactory;
 		}
 
-		public List<GitHubCommitDto> GetCommitsFromRepository(string owner, string repositoryName)
+		public async Task<List<GitHubCommitDto>> GetCommitsFromRepositoryAsync(string owner, string repositoryName)
 		{
+			var allCommits = new List<GitHubCommitDto>();
 			var client = _httpClientFactory.CreateClient(GitHubClientConfig.Name);
+			var currentUrl = $"repos/{owner}/{repositoryName}/commits?per_page={RecordsPerPage}";
 
 			try
 			{
-				var url = $"repos/{owner}/{repositoryName}/commits";
-				var response = client.GetAsync(url).Result;
-				response.EnsureSuccessStatusCode();
+				while (!string.IsNullOrEmpty(currentUrl))
+				{
+					var response = await client.GetAsync(currentUrl);
+					response.EnsureSuccessStatusCode();
 
-				var content = response.Content.ReadAsStringAsync();
-				return JsonSerializer.Deserialize<List<GitHubCommitDto>>(content.Result) ?? new();
+					var content = await response.Content.ReadAsStringAsync();
+					var pageCommits = JsonSerializer.Deserialize<List<GitHubCommitDto>>(content) ?? new();
+					allCommits.AddRange(pageCommits);
+
+					currentUrl = GetNextPageUrl(response.Headers);
+				}
+
+				return allCommits;
 			}
 			catch (HttpRequestException ex)
 			{
@@ -30,23 +44,29 @@ namespace Application.Github
 			}
 		}
 
-		public async Task<List<GitHubCommitDto>> GetCommitsFromRepositoryAsync(string owner, string repositoryName)
+		private string? GetNextPageUrl(HttpResponseHeaders headers)
 		{
-			var client = _httpClientFactory.CreateClient(GitHubClientConfig.Name);
+			var isPaginatedResponse = !headers.Contains(LinkHeaderName);
+			if (isPaginatedResponse) 
+				return null;
 
-			try
-			{
-				var url = $"repos/{owner}/{repositoryName}/commits";
-				var response = await client.GetAsync(url);
-				response.EnsureSuccessStatusCode();
+			var links = headers.GetValues(LinkHeaderName).FirstOrDefault();
+			if (string.IsNullOrEmpty(links)) 
+				return null;
 
-				var content = await response.Content.ReadAsStringAsync();
-				return JsonSerializer.Deserialize<List<GitHubCommitDto>>(content) ?? new();
-			}
-			catch (HttpRequestException ex)
+			var hasNextPage = links.Contains(NextRelation);
+
+			if (hasNextPage)
 			{
-				throw new GitHubApiException($"Error accessing GitHub API: {ex.Message}", ex);
+				var allRels = links.Split(',');
+				var nextPageRel = allRels.Single(s => s.Contains(NextRelation));
+				var linkStartIndex = nextPageRel.IndexOf('<');
+				var linkEndIndex = nextPageRel.IndexOf('>');
+
+				return nextPageRel.Substring(linkStartIndex + 1, linkEndIndex - linkStartIndex - 1);
 			}
+
+			return null;
 		}
 	}
 }
